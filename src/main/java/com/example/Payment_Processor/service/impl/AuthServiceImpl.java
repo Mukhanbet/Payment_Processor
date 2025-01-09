@@ -10,6 +10,7 @@ import com.example.Payment_Processor.model.dto.auth.AuthResponse;
 import com.example.Payment_Processor.repository.UserRepository;
 import com.example.Payment_Processor.service.AuthService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final AuthMapper authMapper;
@@ -28,20 +30,32 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(AuthLoginRequest request) {
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                    request.getEmail(),
-                    request.getPassword()
-            )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        } catch (Exception e) {
+            log.error("Authentication failed for user with email: {}", request.getEmail(), e);
+            throw new CustomException("Invalid credentials", HttpStatus.UNAUTHORIZED);
+        }
 
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> {
+                    log.error("User with email: {} not found", request.getEmail());
+                    return new CustomException("User not found", HttpStatus.NOT_FOUND);
+                });
+
         return authMapper.toResponse(jwtService.generateToken(user), user.getId());
     }
 
     @Override
     public AuthResponse register(AuthRegisterRequest request) {
+
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            log.error("Email already in use: {}", request.getEmail());
             throw new CustomException("Email already in use", HttpStatus.CONFLICT);
         }
 

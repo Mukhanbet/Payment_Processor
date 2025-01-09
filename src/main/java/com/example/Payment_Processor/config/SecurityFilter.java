@@ -1,5 +1,6 @@
 package com.example.Payment_Processor.config;
 
+import com.example.Payment_Processor.exception.CustomException;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,16 +22,14 @@ public class SecurityFilter {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/owner/**", "/cars/**").hasAnyRole("OWNER", "ADMIN")
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/users/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(form -> form
-                        .loginPage("/pages/auth")
-                        .loginProcessingUrl("/pages/auth")
-                        .defaultSuccessUrl("/pages/auth")
-                        .failureForwardUrl("/pages/auth")
+                        .loginPage("/**")
+                        .loginProcessingUrl("/**")
+                        .defaultSuccessUrl("/**")
+                        .failureForwardUrl("/**")
                         .permitAll()
                         .disable())
                 .exceptionHandling(exception -> exception
